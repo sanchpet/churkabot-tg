@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.1.0'
+}
+
+group 'sanch.pet'
+version '1.0-SNAPSHOT'
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'sanch.pet.Main'
+        )
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.telegram:telegrambots-longpolling:9.1.0'
+    implementation 'org.telegram:telegrambots-client:9.1.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+}
+
+test {
+    useJUnitPlatform()
+}
