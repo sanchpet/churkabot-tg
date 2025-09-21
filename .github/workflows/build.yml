@@ -30,4 +30,4 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/churkabot-tg:latest-dev
+          tags: sanchpet/churkabot-tg:latest-dev
