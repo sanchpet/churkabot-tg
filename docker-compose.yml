@@ -1,0 +1,11 @@
+name: churkabot
+services:
+  churkabot-tg:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: churkabot-tg
+    environment:
+      - CHURKA_BOT_TOKEN=${CHURKA_BOT_TOKEN}
+    restart: unless-stopped
+    command: ["java", "-jar", "app.jar"]

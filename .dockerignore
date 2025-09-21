@@ -1,0 +1,21 @@
+# Gradle build output
+/build
+/build.gradle.kts
+.gradle
+# IDE files
+.vscode
+.idea
+*.iml
+# OS files
+.DS_Store
+# Test output
+/test
+# JARs and other artifacts
+*.jar
+*.war
+*.ear
+# Node/npm (if present)
+node_modules
+npm-debug.log
+# Logs
+*.log
