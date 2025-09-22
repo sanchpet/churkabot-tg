@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churkabot-tg
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: churkabot-tg
+  template:
+    metadata:
+      labels:
+        app: churkabot-tg
+    spec:
+      containers:
+      - name: churkabot
+        image: sanchpet/churkabot-tg:v0.0.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: CHURKA_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: churkabot-tg-token
+              key: token 
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 10m
+            memory: 100Mi
