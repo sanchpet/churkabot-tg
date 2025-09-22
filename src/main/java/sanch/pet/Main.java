@@ -2,6 +2,8 @@ package sanch.pet;
 
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
 
+import sanch.pet.updateshandlers.ChurkaBot;
+
 public class Main {
     public static void main(String[] args) {
         try (TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication()) {
