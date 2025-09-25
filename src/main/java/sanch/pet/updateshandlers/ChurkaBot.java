@@ -4,12 +4,17 @@ import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.photo.PhotoSize;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 
 import sanch.pet.services.Emoji;
 
@@ -29,17 +34,31 @@ public class ChurkaBot implements LongPollingSingleThreadUpdateConsumer {
 
     @Override
     public void consume(Update update) {
-        try {
-            Message message = update.getMessage();
+        if (update.hasMessage()) {
             try {
-                handleIncomingMessage(message);
-            } catch (InvalidObjectException e) {
+                Message message = update.getMessage();
+                try {
+                    handleIncomingMessage(message);
+                } catch (InvalidObjectException e) {
+                    e.printStackTrace();
+                }
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } else if (update.hasCallbackQuery()) {
+            try {
+                CallbackQuery callbackQuery = update.getCallbackQuery();
+                try {
+                    handleIncomingCallbackQuery(callbackQuery);
+                } catch (InvalidObjectException e) {
+                    e.printStackTrace();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
         }
-    }
+    }   
 
     private void handleIncomingMessage(Message message) throws InvalidObjectException {
         if (message == null) return;
@@ -48,18 +67,37 @@ public class ChurkaBot implements LongPollingSingleThreadUpdateConsumer {
         String user_last_name = message.getChat().getLastName();
         String user_username = message.getChat().getUserName();
         long user_id = message.getChat().getId();
-        String message_text = message.getText() + " " + Emoji.SMILING_FACE_WITH_SMILING_EYES;
+        String message_text = message.getText();
+        String reply_text = message_text + " " + Emoji.GRINNING_FACE_WITH_SMILING_EYES;
         long chat_id = message.getChatId();
 
         if (message.hasText()) {
+            if (message_text.equals("/start")) {
+                reply_text = "Hi, " + user_first_name + "! This is ChurkaBot! Send me a photo and I will reply you with its file_id, width and height!";
+            } else if (message_text.equals("/help")) {
+                reply_text = "This bot was created to help you get file_id, width and height of photos. Just send me a photo and I will reply you with this information.";
+            } else {
+                reply_text = "I don't understand you. Please, send me a photo so I can get its file_id, width and height.";
+            }
             SendMessage answer = SendMessage // Create a message object
                 .builder()
                 .chatId(chat_id)
-                .text(message_text)
+                .text(reply_text)
+                .replyMarkup(InlineKeyboardMarkup
+                            .builder()
+                            .keyboardRow(
+                                    new InlineKeyboardRow(InlineKeyboardButton
+                                            .builder()
+                                            .text("Update message text")
+                                            .callbackData("update_msg_text")
+                                            .build()
+                                    )
+                            )
+                            .build())
                 .build();
             try {
                 telegramClient.execute(answer); // Sending our message object to user
-                log(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, message_text);
+                log(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, reply_text);
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
@@ -89,6 +127,27 @@ public class ChurkaBot implements LongPollingSingleThreadUpdateConsumer {
             try {
                 telegramClient.execute(answer); // Sending our message object to user
                 log(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, caption);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void handleIncomingCallbackQuery(CallbackQuery callbackQuery) throws InvalidObjectException {
+        // This method is not used in this example
+        String callbackData = callbackQuery.getData();
+        long chat_id = callbackQuery.getMessage().getChatId();
+        int message_id = callbackQuery.getMessage().getMessageId();
+        if (callbackData.equals("update_msg_text")) {
+            String newText = "Message text updated " + Emoji.GRINNING_FACE_WITH_SMILING_EYES;
+            EditMessageText new_message = EditMessageText
+                .builder()
+                .chatId(chat_id)
+                .messageId(message_id)
+                .text(newText)
+                .build();
+            try {
+                telegramClient.execute(new_message);
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
