@@ -8,14 +8,29 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import sanch.pet.handlers.MessageHandler;
 import sanch.pet.handlers.CallbackQueryHandler;
+import sanch.pet.BotConfig;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
+import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 
 import java.io.InvalidObjectException;
 
-public class ChurkaBot implements LongPollingSingleThreadUpdateConsumer {
+@Component
+public class ChurkaBot implements SpringLongPollingBot, LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient;
 
-    public ChurkaBot(String botToken) {
-        telegramClient = new OkHttpTelegramClient(botToken);
+    public ChurkaBot() {
+        telegramClient = new OkHttpTelegramClient(getBotToken());
+    }
+
+    @Override
+    public String getBotToken() {
+        return BotConfig.BOT_TOKEN;
+    }
+
+    @Override
+    public LongPollingUpdateConsumer getUpdatesConsumer() {
+        return this;
     }
 
     @Override
