@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: churkabot
-        image: sanchpet/churkabot-tg:v0.0.2
+        image: sanchpet/churkabot-tg:v0.0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: CHURKA_BOT_TOKEN
