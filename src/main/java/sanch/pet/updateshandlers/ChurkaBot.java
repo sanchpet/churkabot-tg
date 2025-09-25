@@ -11,6 +11,8 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.photo.PhotoSize;
 
+import sanch.pet.services.Emoji;
+
 import java.io.InvalidObjectException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,7 +48,7 @@ public class ChurkaBot implements LongPollingSingleThreadUpdateConsumer {
         String user_last_name = message.getChat().getLastName();
         String user_username = message.getChat().getUserName();
         long user_id = message.getChat().getId();
-        String message_text = message.getText();
+        String message_text = message.getText() + " " + Emoji.SMILING_FACE_WITH_SMILING_EYES;
         long chat_id = message.getChatId();
 
         if (message.hasText()) {
