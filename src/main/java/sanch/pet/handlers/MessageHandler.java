@@ -20,6 +20,9 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import sanch.pet.services.Emoji;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class MessageHandler {
     public static void HandleIncomingMessage(Message message, TelegramClient telegramClient) throws InvalidObjectException {
         if (message == null) return;
@@ -58,7 +61,7 @@ public class MessageHandler {
                 .build();
             try {
                 telegramClient.execute(answer); // Sending our message object to user
-                log(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, reply_text);
+                log.info(logstring(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, reply_text));
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
@@ -87,19 +90,20 @@ public class MessageHandler {
                 .build();
             try {
                 telegramClient.execute(answer); // Sending our message object to user
-                log(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, caption);
+                log.info(logstring(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, caption));
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private static void log(String first_name, String last_name, String user_id, String user_name, String txt, String bot_answer) {
-        System.out.println("\n ----------------------------");
+    private static String logstring(String first_name, String last_name, String user_id, String user_name, String txt, String bot_answer) {
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Date date = new Date();
-        System.out.println(dateFormat.format(date));
-        System.out.println("Message from " + user_name + " (" + first_name + " " + last_name + ")" + ". (id = " + user_id + ") \n Text - " + txt);
-        System.out.println("Bot answer: \n Text - " + bot_answer);
+
+        return "\n----------------------------\n" +
+            dateFormat.format(date) + "\n" +
+            String.format("Message from %s (%s %s). (id = %s) \nText - %s\n", user_name, first_name, last_name, user_id, txt) +
+            String.format("Bot answer: \nText - %s\n", bot_answer);
     }
 }

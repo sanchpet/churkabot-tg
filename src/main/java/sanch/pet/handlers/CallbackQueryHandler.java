@@ -9,6 +9,9 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import sanch.pet.services.Emoji;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class CallbackQueryHandler {
     public static void HandleIncomingCallbackQuery(CallbackQuery callbackQuery, TelegramClient telegramClient) throws InvalidObjectException {
         // This method is not used in this example
@@ -25,8 +28,9 @@ public class CallbackQueryHandler {
                 .build();
             try {
                 telegramClient.execute(new_message);
+                log.info("callbackQuery updated:" + newText);
             } catch (TelegramApiException e) {
-                e.printStackTrace();
+                log.error("Error updating callback", e);
             }
         }
     }
