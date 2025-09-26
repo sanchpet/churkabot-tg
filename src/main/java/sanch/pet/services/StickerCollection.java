@@ -16,4 +16,9 @@ public enum StickerCollection {
     public InputFile getSticker() {
         return sticker;
     }
+
+    @Override
+    public String toString() {
+        return sticker.toString();
+    }
 }

@@ -6,8 +6,12 @@ import org.telegram.telegrambots.meta.api.methods.send.SendSticker;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import sanch.pet.services.LogStrings;
 import sanch.pet.services.StickerCollection;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class DailyStickerSender {
 
@@ -26,8 +30,9 @@ public class DailyStickerSender {
             .build();
         try {
             telegramClient.execute(sendSticker);
+            log.info(LogStrings.dailySticker(StickerCollection.CHURKA_JOKER.name(), chatId));
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error(LogStrings.dailyStickerError(StickerCollection.CHURKA_JOKER.name(), chatId), e);
         }
     }
 }

@@ -1,10 +1,7 @@
 package sanch.pet.handlers;
 
 import java.io.InvalidObjectException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -23,6 +20,8 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import sanch.pet.services.Emoji;
 import sanch.pet.services.StickerCollection;
 import sanch.pet.services.TriggerWords;
+import sanch.pet.services.LogStrings;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -33,10 +32,10 @@ public class MessageHandler {
         String user_first_name = message.getChat().getFirstName();
         String user_last_name = message.getChat().getLastName();
         String user_username = message.getChat().getUserName();
-        long user_id = message.getChat().getId();
+        String user_id = String.valueOf(message.getChat().getId());
         String message_text = message.getText();
         String reply_text = message_text + " " + Emoji.GRINNING_FACE_WITH_SMILING_EYES;
-        long chat_id = message.getChatId();
+        String chat_id = String.valueOf(message.getChatId());
 
         boolean isGroup = message.getChat().isGroupChat() || message.getChat().isSuperGroupChat();
 
@@ -67,8 +66,9 @@ public class MessageHandler {
                         .build();
                     try {
                         telegramClient.execute(sendSticker);
+                        log.info(LogStrings.stickerReaction(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
                     } catch (TelegramApiException e) {
-                        e.printStackTrace();
+                        log.info(LogStrings.stickerReactionError(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
                     }
                 } else {
                     SendMessage answer = SendMessage // Create a message object
@@ -89,7 +89,6 @@ public class MessageHandler {
                         .build();
                     try {
                         telegramClient.execute(answer); // Sending our message object to user
-                        log.info(logstring(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, reply_text));
                     } catch (TelegramApiException e) {
                         e.printStackTrace();
                     }
@@ -120,7 +119,6 @@ public class MessageHandler {
                 .build();
             try {
                 telegramClient.execute(answer); // Sending our message object to user
-                log.info(logstring(user_first_name, user_last_name, Long.toString(user_id), user_username, message_text, caption));
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
@@ -139,15 +137,5 @@ public class MessageHandler {
                 e.printStackTrace();
             }
         }
-    }
-
-    private static String logstring(String first_name, String last_name, String user_id, String user_name, String txt, String bot_answer) {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        Date date = new Date();
-
-        return "\n----------------------------\n" +
-            dateFormat.format(date) + "\n" +
-            String.format("Message from %s (%s %s). (id = %s) \nText - %s\n", user_name, first_name, last_name, user_id, txt) +
-            String.format("Bot answer: \nText - %s\n", bot_answer);
     }
 }
