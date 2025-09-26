@@ -18,7 +18,7 @@ public class DailyStickerSender {
         this.telegramClient = telegramClient;
     }
 
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public void sendDailySticker() {
         SendSticker sendSticker = SendSticker.builder()
             .chatId(chatId)
