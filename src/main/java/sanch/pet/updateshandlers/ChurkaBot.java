@@ -1,6 +1,5 @@
 package sanch.pet.updateshandlers;
 
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -8,7 +7,6 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import sanch.pet.handlers.MessageHandler;
 import sanch.pet.handlers.CallbackQueryHandler;
-import sanch.pet.BotConfig;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
@@ -19,13 +17,13 @@ import java.io.InvalidObjectException;
 public class ChurkaBot implements SpringLongPollingBot, LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient;
 
-    public ChurkaBot() {
-        telegramClient = new OkHttpTelegramClient(getBotToken());
+    public ChurkaBot(TelegramClient telegramClient) {
+        this.telegramClient = telegramClient;
     }
 
     @Override
     public String getBotToken() {
-        return BotConfig.BOT_TOKEN;
+        return System.getenv("CHURKA_BOT_TOKEN");
     }
 
     @Override
