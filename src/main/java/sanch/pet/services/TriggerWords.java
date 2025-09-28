@@ -1,36 +1,28 @@
 package sanch.pet.services;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 public enum TriggerWords {
-    CHURKA("чурка"),
-    CHURKI("чурки"),
-    CHURKE("чурке"),
-    CHURKAM("чуркам"),
-    CHURKAMI("чурками"),
-    CHURKAH("чурках"),
-    CHURKOV("чурок"),
-    CHURKAMY("чурками"),
-    CHURKACH("чурках");
+    CHUR("чур(ка|ки|ке|кам|ками|ках|ок)?"),
+    CHUROCHK("чурочк(а|и|е|ам|ами|ах|ек)?");
 
-    private final String username;
+    private final Pattern pattern;
 
-    TriggerWords(String username) {
-        this.username = username;
+    TriggerWords(String regex) {
+        this.pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     }
 
-    @Override
-    public String toString() {
-        return username;
+    public boolean matches(String message) {
+        if (message == null) return false;
+        Matcher matcher = pattern.matcher(message);
+        return matcher.find();
     }
 
-    // Static method to check if the input message contains any trigger word
     public static boolean containsTriggerWord(String message) {
-        if (message == null) {
-            return false;
-        }
-        String lowerMessage = message.toLowerCase();
-
-        for (TriggerWords trigger : TriggerWords.values()) {
-            if (lowerMessage.contains(trigger.toString().toLowerCase())) {
+        if (message == null) return false;
+        for (TriggerWords trigger : values()) {
+            if (trigger.matches(message)) {
                 return true;
             }
         }

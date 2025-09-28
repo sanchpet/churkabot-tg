@@ -21,6 +21,7 @@ import sanch.pet.services.Emoji;
 import sanch.pet.services.StickerCollection;
 import sanch.pet.services.TriggerWords;
 import sanch.pet.services.LogStrings;
+import sanch.pet.services.BotUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,40 +30,79 @@ public class MessageHandler {
     public static void HandleIncomingMessage(Message message, TelegramClient telegramClient) throws InvalidObjectException {
         if (message == null) return;
 
-        String user_first_name = message.getChat().getFirstName();
-        String user_last_name = message.getChat().getLastName();
-        String user_username = message.getChat().getUserName();
-        String user_id = String.valueOf(message.getChat().getId());
+        boolean isGroup = message.getChat().isGroupChat() || message.getChat().isSuperGroupChat();
+
+        if (isGroup) {
+            handleGroupChat(message, telegramClient);
+        } else {
+            handlePrivateChat(message, telegramClient);
+        }
+    }
+
+    public static void handleGroupChat(Message message, TelegramClient telegramClient) throws InvalidObjectException {
+        String user_first_name = message.getFrom().getFirstName();
+        String user_last_name = message.getFrom().getLastName();
+        String user_username = message.getFrom().getUserName();
+        Integer message_id = message.getMessageId();
+        String user_id = String.valueOf(message.getFrom().getId());
+        String message_text = message.getText();
+        String chat_id = String.valueOf(message.getChatId());
+
+        boolean hasTrigger = TriggerWords.containsTriggerWord(message_text);
+        if (!hasTrigger) return;
+
+        SendSticker sendSticker = SendSticker.builder()
+            .chatId(chat_id)
+            .sticker(StickerCollection.CHURKA_JOKER.getSticker())
+            .replyToMessageId(message_id)
+            .build();
+        try {
+            telegramClient.execute(sendSticker);
+            log.info(LogStrings.stickerReaction(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
+        } catch (TelegramApiException e) {
+            log.error(LogStrings.stickerReactionError(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id), e);
+        }
+    }
+
+    public static void handlePrivateChat(Message message, TelegramClient telegramClient) throws InvalidObjectException {
+        String user_first_name = message.getFrom().getFirstName();
+        String user_last_name = message.getFrom().getLastName();
+        String user_username = message.getFrom().getUserName();
+        Integer message_id = message.getMessageId();
+        String user_id = String.valueOf(message.getFrom().getId());
         String message_text = message.getText();
         String reply_text = message_text + " " + Emoji.GRINNING_FACE_WITH_SMILING_EYES;
         String chat_id = String.valueOf(message.getChatId());
 
-        boolean isGroup = message.getChat().isGroupChat() || message.getChat().isSuperGroupChat();
-
-        if (isGroup) {
-            boolean hasTrigger = false;
-            if (message_text != null) {
-                for (TriggerWords tw : TriggerWords.values()) {
-                    if (message_text.toLowerCase().contains(tw.toString().toLowerCase())) {
-                        hasTrigger = true;
-                        break;
-                    }
-                }
-            }
-            if (!hasTrigger) return;
-        }
-
         if (message.hasText()) {
+            boolean isAdmin = BotUtils.isPrivateChatFromAdmin(message);
+            if (!isAdmin) {
+                reply_text = "Sorry, chat only for admins.";
+                SendMessage answer = SendMessage // Create a message object
+                    .builder()
+                    .chatId(chat_id)
+                    .text(reply_text)
+                    .build();
+                try {
+                    telegramClient.execute(answer);
+                    log.info("Non-admin user " + user_username + " (" + user_first_name + " " + user_last_name + " - id = " + user_id + ") tried to access the bot in private chat.");
+                } catch (TelegramApiException e) {
+                    log.error("Error sending message to non-admin user " + user_username + " (" + user_first_name + " " + user_last_name + " - id = " + user_id + ")", e);
+                }
+                return;
+            }
+
             if (message_text != null && message_text.equals("/start")) {
-                reply_text = "Hi, " + user_first_name + "! This is ChurkaBot! Send me a photo and I will reply you with its file_id, width and height!";
+                reply_text = "Привет, " + user_first_name + "! Я чуркабот";
             } else if (message_text != null && message_text.equals("/help")) {
-                reply_text = "This bot was created to help you get file_id, width and height of photos. Just send me a photo and I will reply you with this information.";
+                reply_text = "На текущем этапе тебе ничего не поможет. Обратись к @sanchpet_unfiltered.";
             } else {
                 boolean hasTrigger = TriggerWords.containsTriggerWord(message_text);
                 if (hasTrigger) {
                     SendSticker sendSticker = SendSticker.builder()
                         .chatId(chat_id)
                         .sticker(StickerCollection.CHURKA_JOKER.getSticker())
+                        .replyToMessageId(message_id)
                         .build();
                     try {
                         telegramClient.execute(sendSticker);
@@ -88,9 +128,10 @@ public class MessageHandler {
                                     .build())
                         .build();
                     try {
-                        telegramClient.execute(answer); // Sending our message object to user
+                        telegramClient.execute(answer);
+                        log.info("Replied to admin " + user_username + " (" + user_first_name + " " + user_last_name + " - id = " + user_id + ") in private chat.");
                     } catch (TelegramApiException e) {
-                        e.printStackTrace();
+                        log.error("Error sending message to admin " + user_username + " (" + user_first_name + " " + user_last_name + " - id = " + user_id + ") in private chat.", e);
                     }
                 }
             }
@@ -118,9 +159,10 @@ public class MessageHandler {
                 .caption(caption)
                 .build();
             try {
-                telegramClient.execute(answer); // Sending our message object to user
+                telegramClient.execute(answer);
+                log.info("User sent a photo with file ID: " + f_id);
             } catch (TelegramApiException e) {
-                e.printStackTrace();
+                log.error("Error sending photo back to user", e);
             }
         } else if (message.hasSticker()) {
             Sticker sticker = message.getSticker();
@@ -134,7 +176,7 @@ public class MessageHandler {
                 telegramClient.execute(answer); // Sending our message object to user
                 log.info("User sent a sticker with file ID: " + stickerId);
             } catch (TelegramApiException e) {
-                e.printStackTrace();
+                log.error("Error sending sticker ID back to user", e);
             }
         }
     }
