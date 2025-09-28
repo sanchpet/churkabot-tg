@@ -2,22 +2,23 @@ package sanch.pet.services;
 
 public enum Admins {
     SANCHPET("sanchpet"),
-    CHURKAMAN("churkaman"),
-    BOTMASTER("botmaster");
+    AMPLITUDNIY("amplitudniy"),
+    SANCHPET_UNFILTERED("sanchpet_unfiltered");
 
-    private final String triggerWord;
+    private final String username;
 
-    Admins(String triggerWord) {
-        this.triggerWord = triggerWord;
+    Admins(String username) {
+        this.username = username;
     }
 
-    public String getTriggerWord() {
-        return triggerWord;
+    public String getUsername() {
+        return username;
     }
 
     public static boolean contains(String username) {
+        if (username == null) return false;
         for (Admins u : values()) {
-            if (u.getTriggerWord().equalsIgnoreCase(username)) {
+            if (u.getUsername().equalsIgnoreCase(username)) {
                 return true;
             }
         }
