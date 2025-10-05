@@ -48,19 +48,19 @@ public class MessageHandler {
         String message_text = message.getText();
         String chat_id = String.valueOf(message.getChatId());
 
-        boolean hasTrigger = TriggerWords.containsTriggerWord(message_text);
-        if (!hasTrigger) return;
+        StickerCollection sticker_reaction = TriggerWords.findStickerFor(message_text);
+        if (sticker_reaction == null) return;
 
         SendSticker sendSticker = SendSticker.builder()
             .chatId(chat_id)
-            .sticker(StickerCollection.CHURKA_JOKER.getSticker())
+            .sticker(sticker_reaction.getSticker())
             .replyToMessageId(message_id)
             .build();
         try {
             telegramClient.execute(sendSticker);
-            log.info(LogStrings.stickerReaction(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
+            log.info(LogStrings.stickerReaction(sticker_reaction.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
         } catch (TelegramApiException e) {
-            log.error(LogStrings.stickerReactionError(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id), e);
+            log.error(LogStrings.stickerReactionError(sticker_reaction.name(), user_first_name, user_last_name, user_id, user_username, chat_id), e);
         }
     }
 
@@ -97,18 +97,18 @@ public class MessageHandler {
             } else if (message_text != null && message_text.equals("/help")) {
                 reply_text = "На текущем этапе тебе ничего не поможет. Обратись к @sanchpet_unfiltered.";
             } else {
-                boolean hasTrigger = TriggerWords.containsTriggerWord(message_text);
-                if (hasTrigger) {
+                StickerCollection sticker_reaction = TriggerWords.findStickerFor(message_text);
+                if (sticker_reaction != null) {
                     SendSticker sendSticker = SendSticker.builder()
                         .chatId(chat_id)
-                        .sticker(StickerCollection.CHURKA_JOKER.getSticker())
+                        .sticker(sticker_reaction.getSticker())
                         .replyToMessageId(message_id)
                         .build();
                     try {
                         telegramClient.execute(sendSticker);
-                        log.info(LogStrings.stickerReaction(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
+                        log.info(LogStrings.stickerReaction(sticker_reaction.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
                     } catch (TelegramApiException e) {
-                        log.info(LogStrings.stickerReactionError(StickerCollection.CHURKA_JOKER.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
+                        log.info(LogStrings.stickerReactionError(sticker_reaction.name(), user_first_name, user_last_name, user_id, user_username, chat_id));
                     }
                 } else {
                     SendMessage answer = SendMessage // Create a message object
