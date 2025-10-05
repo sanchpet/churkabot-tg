@@ -4,8 +4,8 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 
 public enum StickerCollection {
     CHURKA_JOKER(new InputFile("CAACAgIAAxkBAAMxaNYNncvw1laDYnDFYW2N-PBvprEAAlYTAALzWwFIbKJ09BOwAAHkNgQ")),
-    CHURKA_SMILE(new InputFile("CAACAgIAAxkBAAIBQ2YNncvw1laDYnDFYW2N-PBvprEAAlYTAALzWwFIbKJ09BOwAAHkNgR")),
-    CHURKA_SAD(new InputFile("CAACAgIAAxkBAAIBQmYNncvw1laDYnDFYW2N-PBvprEAAlYTAALzWwFIbKJ09BOwAAHkNgS"));
+    CHURKA_SILENCE(new InputFile("CAACAgIAAxkBAAOLaNYh6pGe8n_qvV40Hj_SP9vqQJYAAqEVAAINfRBIc9_-Nn_UjbI2BA")),
+    CHURKA_PROOF(new InputFile("CAACAgIAAxkBAAIBl2jiG4Qy5rmnf9zTzIILZbanfSDOAAKXFQAC1MIRSFaAhf9LJ34gNgQ"));
 
     private final InputFile sticker;
 
