@@ -1,0 +1,19 @@
+name: release-please
+
+# Merging the release PR tags the release, and ci.yml builds the image for the tag. A PAT, because
+# a tag pushed with GITHUB_TOKEN triggers no further workflow.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.GH_PAT }}
