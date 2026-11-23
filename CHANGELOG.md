@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/sanchpet/churkabot-tg/compare/v0.3.0...v0.4.0) (2026-11-23)
+
+
+### Features
+
+* tease one user with a GIF on a share of their messages ([#6](https://github.com/sanchpet/churkabot-tg/issues/6)) ([7e08273](https://github.com/sanchpet/churkabot-tg/commit/7e0827365198bea209bd954758978f2346f9df7c))
+
 ## [0.3.0](https://github.com/sanchpet/churkabot-tg/compare/v0.2.0...v0.3.0) (2026-11-23)
 
 
