@@ -15,10 +15,16 @@ type Config struct {
 	Token       string
 	Admins      map[int64]bool
 	DailyChatID int64
+	// TeaseUserID gets the Uimis animation on a TeaseChance share of their group messages; 0 is off.
+	TeaseUserID int64
+	TeaseChance float64
 }
 
-// Load reads TELEGRAM_BOT_TOKEN, CHURKABOT_ADMIN_IDS (comma-separated user IDs) and
-// CHURKABOT_DAILY_CHAT_ID. Only the token is required here; a command that needs more checks it.
+const defaultTeaseChance = 0.03
+
+// Load reads TELEGRAM_BOT_TOKEN, CHURKABOT_ADMIN_IDS (comma-separated user IDs),
+// CHURKABOT_DAILY_CHAT_ID, CHURKABOT_TEASE_USER_ID and CHURKABOT_TEASE_CHANCE (0 to 1, default
+// 0.03). Only the token is required here; a command that needs more checks it.
 func Load() (Config, error) {
 	return parse(os.Getenv)
 }
@@ -45,6 +51,21 @@ func parse(getenv func(string) string) (Config, error) {
 			return c, fmt.Errorf("CHURKABOT_DAILY_CHAT_ID: %q is not a chat ID", v)
 		}
 		c.DailyChatID = id
+	}
+	if v := strings.TrimSpace(getenv("CHURKABOT_TEASE_USER_ID")); v != "" {
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return c, fmt.Errorf("CHURKABOT_TEASE_USER_ID: %q is not a user ID", v)
+		}
+		c.TeaseUserID = id
+	}
+	c.TeaseChance = defaultTeaseChance
+	if v := strings.TrimSpace(getenv("CHURKABOT_TEASE_CHANCE")); v != "" {
+		p, err := strconv.ParseFloat(v, 64)
+		if err != nil || p < 0 || p > 1 {
+			return c, fmt.Errorf("CHURKABOT_TEASE_CHANCE: %q is not a probability between 0 and 1", v)
+		}
+		c.TeaseChance = p
 	}
 	return c, nil
 }

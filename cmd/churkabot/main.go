@@ -76,7 +76,7 @@ func poll(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	h = handler.New(b, cfg.Admins, log)
+	h = handler.New(b, cfg.Admins, handler.Tease{UserID: cfg.TeaseUserID, Chance: cfg.TeaseChance}, log)
 
 	me, err := b.GetMe(ctx)
 	if err != nil {
@@ -92,14 +92,14 @@ func poll(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 	if _, err := b.DeleteWebhook(ctx, &bot.DeleteWebhookParams{}); err != nil {
 		log.Warn("deleteWebhook", "error", err)
 	}
-	// A sticker whose file_id no longer works is found now rather than on its first trigger.
-	for _, s := range rules.Stickers {
+	// A file_id that no longer works is found now rather than on its first trigger.
+	for _, s := range rules.Files {
 		if _, err := b.GetFile(ctx, &bot.GetFileParams{FileID: s.FileID}); err != nil {
-			log.Error("sticker file_id is not usable", "sticker", s.Name, "error", err)
+			log.Error("file_id is not usable", "file", s.Name, "error", err)
 		}
 	}
 
-	log.Info("polling", "bot", me.Username, "admins", len(cfg.Admins))
+	log.Info("polling", "bot", me.Username, "admins", len(cfg.Admins), "tease", cfg.TeaseUserID != 0)
 	b.Start(ctx)
 	log.Info("stopped")
 	return nil
