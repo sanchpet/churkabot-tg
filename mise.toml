@@ -1,0 +1,25 @@
+# Toolchain for this repo. mise-first: everything the build and CI need is pinned here, so a
+# checkout on another machine reproduces the same binaries.
+[tools]
+go = "1.26.5"
+golangci-lint = "2.12.2"
+
+[tasks.build]
+description = "Compile every package"
+run = "go build ./..."
+
+[tasks.test]
+description = "Run the test suite"
+run = "go test -race ./..."
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run ./..."
+
+[tasks.fmt]
+description = "Format Go sources"
+run = "gofmt -w ."
+
+[tasks.ci]
+description = "Everything CI runs"
+depends = ["lint", "test", "build"]

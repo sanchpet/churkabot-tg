@@ -1,15 +1,16 @@
-# ---- Build Stage ----
-FROM gradle:9.1.0-jdk17 AS build
-WORKDIR /app
+FROM golang:1.26.5-alpine AS build
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
-RUN gradle clean shadowJar --no-daemon
+RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/churkabot ./cmd/churkabot
 
-# ---- Run Stage ----
-FROM eclipse-temurin:17-jre
-WORKDIR /app
-COPY --from=build /app/build/libs/churkabot-tg-*-all.jar app.jar
+# The bot only makes outbound TLS calls to Telegram: certificates, no shell.
+FROM gcr.io/distroless/static-debian12:nonroot
 
-# Set environment variable for bot token (override at runtime)
-ENV CHURKA_BOT_TOKEN=changeme
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY --from=build /out/churkabot /churkabot
+USER nonroot:nonroot
+ENTRYPOINT ["/churkabot"]
+CMD ["poll"]
