@@ -1,7 +1,8 @@
 name: release-please
 
-# Merging the release PR tags the release, and ci.yml builds the image for the tag. A PAT, because
-# a tag pushed with GITHUB_TOKEN triggers no further workflow.
+# Merging the release PR tags the release, and ci.yml builds the image for the tag. A GitHub App
+# token, because a tag pushed with GITHUB_TOKEN triggers no further workflow, and an App key does not
+# expire the way a PAT does.
 on:
   push:
     branches: [main]
@@ -14,6 +15,11 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      - id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_PLEASE_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
       - uses: googleapis/release-please-action@v5
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ steps.app.outputs.token }}
