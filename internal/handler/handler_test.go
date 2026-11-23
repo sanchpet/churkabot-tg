@@ -15,12 +15,18 @@ import (
 )
 
 type fake struct {
-	stickers []*bot.SendStickerParams
-	messages []*bot.SendMessageParams
+	stickers   []*bot.SendStickerParams
+	messages   []*bot.SendMessageParams
+	animations []*bot.SendAnimationParams
 }
 
 func (f *fake) SendSticker(_ context.Context, p *bot.SendStickerParams) (*models.Message, error) {
 	f.stickers = append(f.stickers, p)
+	return &models.Message{}, nil
+}
+
+func (f *fake) SendAnimation(_ context.Context, p *bot.SendAnimationParams) (*models.Message, error) {
+	f.animations = append(f.animations, p)
 	return &models.Message{}, nil
 }
 
@@ -29,14 +35,18 @@ func (f *fake) SendMessage(_ context.Context, p *bot.SendMessageParams) (*models
 	return &models.Message{}, nil
 }
 
-const admin = 1001
+const (
+	admin  = 1001
+	teased = 1003
+)
 
 var start = time.Date(2026, 11, 22, 9, 0, 0, 0, time.UTC)
 
 func setup() (*Handler, *fake, *time.Time) {
 	f := &fake{}
 	now := start
-	h := New(f, map[int64]bool{admin: true}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	h := New(f, map[int64]bool{admin: true}, Tease{UserID: teased, Chance: 0.03}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	h.roll = func() float64 { return 0.5 }
 	h.now = func() time.Time { return now }
 	return h, f, &now
 }
@@ -134,6 +144,52 @@ func TestGroupCooldownIsPerChat(t *testing.T) {
 	}
 }
 
+func TestTease(t *testing.T) {
+	cases := []struct {
+		name       string
+		from       int64
+		roll       float64
+		text       string
+		animations int
+		stickers   int
+	}{
+		{"hit", teased, 0.02, "привет", 1, 0},
+		{"hit beats a trigger word", teased, 0.02, "точно", 1, 0},
+		{"miss", teased, 0.03, "привет", 0, 0},
+		{"miss leaves the rules alone", teased, 0.5, "точно", 0, 1},
+		{"someone else", 5, 0, "привет", 0, 0},
+	}
+	for _, c := range cases {
+		h, f, _ := setup()
+		h.roll = func() float64 { return c.roll }
+		h.Handle(context.Background(), msg(models.ChatTypeSupergroup, c.from, c.text))
+		if len(f.animations) != c.animations || len(f.stickers) != c.stickers {
+			t.Errorf("%s: animations = %d, stickers = %d; want %d, %d", c.name, len(f.animations), len(f.stickers), c.animations, c.stickers)
+		}
+	}
+	h, f, _ := setup()
+	h.roll = func() float64 { return 0 }
+	h.Handle(context.Background(), msg(models.ChatTypeGroup, teased, "привет"))
+	p := f.animations[0]
+	if p.ChatID != int64(-42) || p.ReplyParameters.MessageID != 7 || p.Animation.(*models.InputFileString).Data != rules.Uimis.FileID {
+		t.Fatalf("animation params = %+v", p)
+	}
+	h.Handle(context.Background(), msg(models.ChatTypeGroup, teased, "привет"))
+	if len(f.animations) != 1 {
+		t.Fatal("the cooldown must hold the tease too")
+	}
+}
+
+func TestTeaseOff(t *testing.T) {
+	f := &fake{}
+	h := New(f, nil, Tease{Chance: 1}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	h.now = func() time.Time { return start }
+	h.Handle(context.Background(), msg(models.ChatTypeGroup, 0, "привет"))
+	if len(f.animations) != 0 {
+		t.Fatal("a zero user ID turns the tease off; it must not match a sender with ID 0")
+	}
+}
+
 func TestPrivateNonAdmin(t *testing.T) {
 	h, f, _ := setup()
 	h.Handle(context.Background(), msg(models.ChatTypePrivate, 5, "точно"))
@@ -160,6 +216,9 @@ func TestPrivateAdmin(t *testing.T) {
 		{"no match", func(m *models.Message) { m.Text = "наверное" }, "no match"},
 		{"shouting", func(m *models.Message) { m.Text = "ЗАЧЕМ ТАК" }, "shouting → silence"},
 		{"sticker", func(m *models.Message) { m.Sticker = &models.Sticker{FileID: "stk", SetName: "set"} }, "file_id: stk"},
+		{"animation", func(m *models.Message) {
+			m.Animation = &models.Animation{FileID: "gif", Width: 320, Height: 180, Duration: 2}
+		}, "file_id: gif"},
 		{"largest photo", func(m *models.Message) {
 			m.Photo = []models.PhotoSize{{FileID: "small", Width: 90, Height: 90}, {FileID: "big", Width: 1280, Height: 960}, {FileID: "mid", Width: 320, Height: 240}}
 		}, "file_id: big\nsize: 1280x960"},

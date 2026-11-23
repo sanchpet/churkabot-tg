@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"strings"
 	"sync"
 	"time"
@@ -30,22 +31,32 @@ const (
 type Sender interface {
 	SendSticker(ctx context.Context, params *bot.SendStickerParams) (*models.Message, error)
 	SendMessage(ctx context.Context, params *bot.SendMessageParams) (*models.Message, error)
+	SendAnimation(ctx context.Context, params *bot.SendAnimationParams) (*models.Message, error)
+}
+
+// Tease answers a share of one user's group messages, whatever they say, with the Uimis animation.
+// A zero UserID turns it off.
+type Tease struct {
+	UserID int64
+	Chance float64
 }
 
 // Handler answers group messages with stickers and admins' private messages with diagnostics.
 type Handler struct {
 	api    Sender
 	admins map[int64]bool
+	tease  Tease
 	log    *slog.Logger
 	now    func() time.Time
+	roll   func() float64
 
 	mu        sync.Mutex
 	lastReply map[int64]time.Time
 }
 
 // New returns a Handler that sends through api and treats the given user IDs as admins.
-func New(api Sender, admins map[int64]bool, log *slog.Logger) *Handler {
-	return &Handler{api: api, admins: admins, log: log, now: time.Now, lastReply: map[int64]time.Time{}}
+func New(api Sender, admins map[int64]bool, tease Tease, log *slog.Logger) *Handler {
+	return &Handler{api: api, admins: admins, tease: tease, log: log, now: time.Now, roll: rand.Float64, lastReply: map[int64]time.Time{}}
 }
 
 // Handle processes one update.
@@ -71,6 +82,10 @@ func (h *Handler) group(ctx context.Context, m *models.Message) {
 	if h.now().Sub(time.Unix(int64(m.Date), 0)) > staleAfter {
 		return
 	}
+	if h.tease.UserID != 0 && m.From.ID == h.tease.UserID && h.roll() < h.tease.Chance {
+		h.teaseReply(ctx, m)
+		return
+	}
 	text, entities := content(m)
 	match, ok := rules.Find(text, entities)
 	if !ok {
@@ -91,6 +106,24 @@ func (h *Handler) group(ctx context.Context, m *models.Message) {
 		return
 	}
 	log.Info("reaction sent", "sticker", match.Sticker.Name)
+}
+
+func (h *Handler) teaseReply(ctx context.Context, m *models.Message) {
+	log := h.log.With("chat_id", m.Chat.ID, "user_id", m.From.ID)
+	if !h.allow(m.Chat.ID) {
+		log.Debug("tease skipped: cooldown")
+		return
+	}
+	_, err := h.api.SendAnimation(ctx, &bot.SendAnimationParams{
+		ChatID:          m.Chat.ID,
+		Animation:       &models.InputFileString{Data: rules.Uimis.FileID},
+		ReplyParameters: &models.ReplyParameters{MessageID: m.ID},
+	})
+	if err != nil {
+		log.Warn("tease failed", "error", err)
+		return
+	}
+	log.Info("tease sent")
 }
 
 // allow reports whether the chat is out of its cooldown, and starts a new one if it is.
@@ -117,6 +150,9 @@ func (h *Handler) private(ctx context.Context, m *models.Message) {
 	case m.Sticker != nil:
 		s := m.Sticker
 		h.reply(ctx, m, fmt.Sprintf("file_id: %s\nfile_unique_id: %s\nset: %s\nemoji: %s", s.FileID, s.FileUniqueID, s.SetName, s.Emoji))
+	case m.Animation != nil:
+		a := m.Animation
+		h.reply(ctx, m, fmt.Sprintf("file_id: %s\nfile_unique_id: %s\nsize: %dx%d, %ds", a.FileID, a.FileUniqueID, a.Width, a.Height, a.Duration))
 	case len(m.Photo) > 0:
 		p := m.Photo[0]
 		for _, size := range m.Photo[1:] {
@@ -128,7 +164,7 @@ func (h *Handler) private(ctx context.Context, m *models.Message) {
 	case command(m.Text) == "/start":
 		h.reply(ctx, m, fmt.Sprintf("Привет, %s! Я чуркабот.", m.From.FirstName))
 	case command(m.Text) == "/help":
-		h.reply(ctx, m, "Пришли стикер или фото — отвечу их file_id.\nПришли текст — скажу, какое правило на него сработает в группе.")
+		h.reply(ctx, m, "Пришли стикер, гифку или фото — отвечу их file_id.\nПришли текст — скажу, какое правило на него сработает в группе.")
 	default:
 		text, entities := content(m)
 		if text == "" {

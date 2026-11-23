@@ -23,8 +23,11 @@ var (
 	Proof   = Sticker{"proof", "CAACAgIAAxkBAAIBl2jiG4Qy5rmnf9zTzIILZbanfSDOAAKXFQAC1MIRSFaAhf9LJ34gNgQ"}
 )
 
-// Stickers lists every sticker, for the startup check of their file_ids.
-var Stickers = []Sticker{Joker, Silence, Proof}
+// Uimis is an animation ("Никита, уймись"), sent with sendAnimation rather than sendSticker.
+var Uimis = Sticker{"uimis", "CgACAgIAAxkDAAMvawQpPos5FAR0KXLqXd2lrIMKrmQAAkW3AAKnXSBIxKjxHmwwqc09BA"}
+
+// Files lists every file the bot sends, for the startup check of their file_ids.
+var Files = []Sticker{Joker, Silence, Proof, Uimis}
 
 type rule struct {
 	name    string
